@@ -18,10 +18,22 @@
 #define ANDROID_STRONG_POINTER_H
 
 //#include <cutils/atomic.h>
+#include <atomic.h>
+#include <atomic-x86.h>
+
 
 #include <stdint.h>
 #include <sys/types.h>
 #include <stdlib.h>
+
+#ifndef CONDITION
+#define CONDITION(cond)     ((cond) != 0)
+#endif
+
+#define ALOG_ASSERT(cond, ...) \
+	if (!(cond)) \
+		fprintf(stderr, __VA_ARGS__)
+	
 
 // ---------------------------------------------------------------------------
 namespace android {
@@ -62,7 +74,6 @@ public:
 
     sp(T* other);
     sp(const sp<T>& other);
-
     template<typename U> sp(U* other);
     template<typename U> sp(const sp<U>& other);
 

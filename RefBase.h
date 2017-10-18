@@ -18,19 +18,21 @@
 #define ANDROID_REF_BASE_H
 
 //#include <cutils/atomic.h>
-
 #include <stdint.h>
 #include <sys/types.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "StrongPointer.h"
+//#include <utils/StrongPointer.h>
 //#include <utils/TypeHelpers.h>
+
+#include <StrongPointer.h>
 
 // ---------------------------------------------------------------------------
 namespace android {
 
-//TextOutput& printWeakPointer(TextOutput& to, const void* val);
+class TextOutput;
+TextOutput& printWeakPointer(TextOutput& to, const void* val);
 
 // ---------------------------------------------------------------------------
 
@@ -68,13 +70,13 @@ public:
 class RefBase
 {
 public:
-    void            incStrong(const void* id) const;
-    void            decStrong(const void* id) const;
+            void            incStrong(const void* id) const;
+            void            decStrong(const void* id) const;
+    
+            void            forceIncStrong(const void* id) const;
 
-    void            forceIncStrong(const void* id) const;
-
-    //! DEBUGGING ONLY: Get current strong ref count.
-    int32_t         getStrongCount() const;
+            //! DEBUGGING ONLY: Get current strong ref count.
+            int32_t         getStrongCount() const;
 
     class weakref_type
     {
@@ -108,15 +110,15 @@ public:
         void                trackMe(bool enable, bool retain);
     };
     
-    weakref_type*   createWeak(const void* id) const;
+            weakref_type*   createWeak(const void* id) const;
+            
+            weakref_type*   getWeakRefs() const;
 
-    weakref_type*   getWeakRefs() const;
+            //! DEBUGGING ONLY: Print references held on object.
+    inline  void            printRefs() const { getWeakRefs()->printRefs(); }
 
-    //! DEBUGGING ONLY: Print references held on object.
-    inline  void    printRefs() const { getWeakRefs()->printRefs(); }
-
-    //! DEBUGGING ONLY: Enable tracking of object.
-    inline  void    trackMe(bool enable, bool retain)
+            //! DEBUGGING ONLY: Enable tracking of object.
+    inline  void            trackMe(bool enable, bool retain)
     { 
         getWeakRefs()->trackMe(enable, retain); 
     }
@@ -134,7 +136,7 @@ protected:
         OBJECT_LIFETIME_MASK    = 0x0001
     };
     
-    void            extendObjectLifetime(int32_t mode);
+            void            extendObjectLifetime(int32_t mode);
             
     //! Flags for onIncStrongAttempted()
     enum {
@@ -150,8 +152,8 @@ private:
     friend class weakref_type;
     class weakref_impl;
     
-                    RefBase(const RefBase& o);
-    RefBase&        operator=(const RefBase& o);
+                            RefBase(const RefBase& o);
+            RefBase&        operator=(const RefBase& o);
 
 private:
     friend class ReferenceMover;
@@ -164,7 +166,7 @@ private:
     static void renameRefId(RefBase* ref,
             const void* old_id, const void* new_id);
 
-    weakref_impl* const mRefs;
+        weakref_impl* const mRefs;
 };
 
 // ---------------------------------------------------------------------------
@@ -174,23 +176,14 @@ class LightRefBase
 {
 public:
     inline LightRefBase() : mCount(0) { }
-
     inline void incStrong(__attribute__((unused)) const void* id) const {
-        //android_atomic_inc(&mCount);
-		mCount++;
+        android_atomic_inc(&mCount);
     }
-
     inline void decStrong(__attribute__((unused)) const void* id) const {
-		/*
         if (android_atomic_dec(&mCount) == 1) {
             delete static_cast<const T*>(this);
         }
-		*/
-		if ((mCount--) == 1) {
-            delete static_cast<const T*>(this);
-        }
     }
-
     //! DEBUGGING ONLY: Get current strong ref count.
     inline int32_t getStrongCount() const {
         return mCount;
@@ -203,10 +196,9 @@ protected:
 
 private:
     friend class ReferenceMover;
-
     inline static void renameRefs(size_t n, const ReferenceRenamer& renamer) { }
-
-    inline static void renameRefId(T* ref, const void* old_id, const void* new_id) { }
+    inline static void renameRefId(T* ref,
+            const void* old_id, const void* new_id) { }
 
 private:
     mutable volatile int32_t mCount;
@@ -304,8 +296,8 @@ private:
     weakref_type*   m_refs;
 };
 
-//template <typename T>
-//TextOutput& operator<<(TextOutput& to, const wp<T>& val);
+template <typename T>
+TextOutput& operator<<(TextOutput& to, const wp<T>& val);
 
 #undef COMPARE_WEAK
 
@@ -364,8 +356,7 @@ wp<T>::wp(const sp<U>& other)
 template<typename T>
 wp<T>::~wp()
 {
-    if (m_ptr)
-        m_refs->decWeak(this);
+    if (m_ptr) m_refs->decWeak(this);
 }
 
 template<typename T>
@@ -451,11 +442,9 @@ template<typename T>
 sp<T> wp<T>::promote() const
 {
     sp<T> result;
-
     if (m_ptr && m_refs->attemptIncStrong(&result)) {
         result.set_pointer(m_ptr);
     }
-
     return result;
 }
 
@@ -468,13 +457,11 @@ void wp<T>::clear()
     }
 }
 
-/*
 template <typename T>
 inline TextOutput& operator<<(TextOutput& to, const wp<T>& val)
 {
-    //return printWeakPointer(to, val.unsafe_get());
+    return printWeakPointer(to, val.unsafe_get());
 }
-*/
 
 // ---------------------------------------------------------------------------
 
