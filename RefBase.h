@@ -21,6 +21,7 @@
 #include <stdint.h>
 #include <sys/types.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 
 //#include <utils/StrongPointer.h>
@@ -308,7 +309,9 @@ template<typename T>
 wp<T>::wp(T* other)
     : m_ptr(other)
 {
-    if (other) m_refs = other->createWeak(this);
+	LOG_LINE();
+    if (other)
+		m_refs = other->createWeak(this);
 }
 
 template<typename T>
@@ -323,6 +326,7 @@ wp<T>::wp(const sp<T>& other)
     : m_ptr(other.m_ptr)
 {
     if (m_ptr) {
+		LOG_LINE();
         m_refs = m_ptr->createWeak(this);
     }
 }
@@ -356,7 +360,8 @@ wp<T>::wp(const sp<U>& other)
 template<typename T>
 wp<T>::~wp()
 {
-    if (m_ptr) m_refs->decWeak(this);
+    if (m_ptr) 
+		m_refs->decWeak(this);
 }
 
 template<typename T>

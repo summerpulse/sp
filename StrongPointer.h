@@ -26,6 +26,8 @@
 #include <sys/types.h>
 #include <stdlib.h>
 
+#define LOG_LINE() fprintf(stderr, "[%s:%d]\n", __FUNCTION__, __LINE__)
+
 #ifndef CONDITION
 #define CONDITION(cond)     ((cond) != 0)
 #endif
@@ -151,6 +153,7 @@ sp<T>::sp(const sp<U>& other)
 
 template<typename T>
 sp<T>::~sp() {
+	LOG_LINE();
     if (m_ptr)
         m_ptr->decStrong(this);
 }

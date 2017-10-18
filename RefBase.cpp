@@ -74,6 +74,7 @@ public:
         , mBase(base)
         , mFlags(0)
     {
+		LOG_LINE();
     }
 
     void addStrongRef(const void* /*id*/) { }
@@ -82,7 +83,9 @@ public:
     void addWeakRef(const void* /*id*/) { }
     void removeWeakRef(const void* /*id*/) { }
     void renameWeakRefId(const void* /*old_id*/, const void* /*new_id*/) { }
-    void printRefs() const { }
+    void printRefs() const { 
+		fprintf(stderr, "obj:%p: strong_ref:%d, weak_ref:%d\n", mBase, mStrong, mWeak);
+	}
     void trackMe(bool, bool) { }
 
 #else
@@ -323,16 +326,19 @@ void RefBase::incStrong(const void* id) const
     
     refs->addStrongRef(id);
     const int32_t c = android_atomic_inc(&refs->mStrong);
+	fprintf(stderr, "incStrong: after android_atomic_inc, from %d to %d\n", c, refs->mStrong);
     ALOG_ASSERT(c > 0, "incStrong() called on %p after last strong ref", refs);
 #if PRINT_REFS
     ALOGD("incStrong of %p from %p: cnt=%d\n", this, id, c);
 #endif
+
     if (c != INITIAL_STRONG_VALUE)  {
         return;
     }
 
     android_atomic_add(-INITIAL_STRONG_VALUE, &refs->mStrong);
     refs->mBase->onFirstRef();
+	refs->printRefs();
 }
 
 void RefBase::decStrong(const void* id) const
@@ -340,16 +346,22 @@ void RefBase::decStrong(const void* id) const
     weakref_impl* const refs = mRefs;
     refs->removeStrongRef(id);
     const int32_t c = android_atomic_dec(&refs->mStrong);
+	
 #if PRINT_REFS
     ALOGD("decStrong of %p from %p: cnt=%d\n", this, id, c);
 #endif
+
     ALOG_ASSERT(c >= 1, "decStrong() called on %p too many times", refs);
+	
     if (c == 1) {
         refs->mBase->onLastStrongRef(id);
+
         if ((refs->mFlags&OBJECT_LIFETIME_MASK) == OBJECT_LIFETIME_STRONG) {
+			fprintf(stderr, "delete %p\n", this);
             delete this;
         }
     }
+	
     refs->decWeak(id);
 }
 
@@ -387,32 +399,36 @@ RefBase* RefBase::weakref_type::refBase() const
 
 void RefBase::weakref_type::incWeak(const void* id)
 {
+	LOG_LINE();
     weakref_impl* const impl = static_cast<weakref_impl*>(this);
     impl->addWeakRef(id);
     const int32_t c = android_atomic_inc(&impl->mWeak);
     ALOG_ASSERT(c >= 0, "incWeak called on %p after last weak ref", this);
 }
 
-
 void RefBase::weakref_type::decWeak(const void* id)
 {
     weakref_impl* const impl = static_cast<weakref_impl*>(this);
     impl->removeWeakRef(id);
     const int32_t c = android_atomic_dec(&impl->mWeak);
+	
     ALOG_ASSERT(c >= 1, "decWeak called on %p too many times", this);
-    if (c != 1) return;
+	
+    if (c != 1) 
+		return;
 
-    if ((impl->mFlags&OBJECT_LIFETIME_WEAK) == OBJECT_LIFETIME_STRONG) {
+    if ((impl->mFlags & OBJECT_LIFETIME_WEAK) == OBJECT_LIFETIME_STRONG) {
         // This is the regular lifetime case. The object is destroyed
         // when the last strong reference goes away. Since weakref_impl
         // outlive the object, it is not destroyed in the dtor, and
         // we'll have to do it here.
         if (impl->mStrong == INITIAL_STRONG_VALUE) {
+			LOG_LINE();
             // Special case: we never had a strong reference, so we need to
             // destroy the object now.
             delete impl->mBase;
         } else {
-            // ALOGV("Freeing refs %p of old RefBase %p\n", this, impl->mBase);
+            fprintf(stderr, "Freeing refs %p of old RefBase %p\n", this, impl->mBase);
             delete impl;
         }
     } else {
@@ -566,8 +582,10 @@ void RefBase::weakref_type::trackMe(bool enable, bool retain)
     static_cast<weakref_impl*>(this)->trackMe(enable, retain);
 }
 
-RefBase::weakref_type* RefBase::createWeak(const void* id) const
+RefBase::weakref_type* 
+RefBase::createWeak(const void* id) const
 {
+	LOG_LINE();
     mRefs->incWeak(id);
     return mRefs;
 }
@@ -580,6 +598,7 @@ RefBase::weakref_type* RefBase::getWeakRefs() const
 RefBase::RefBase()
     : mRefs(new weakref_impl(this))
 {
+	fprintf(stderr, "RefBase Ctor, this=%p\n", this);
 }
 
 RefBase::~RefBase()
@@ -610,6 +629,7 @@ void RefBase::extendObjectLifetime(int32_t mode)
 
 void RefBase::onFirstRef()
 {
+	LOG_LINE();
 }
 
 void RefBase::onLastStrongRef(const void* /*id*/)
