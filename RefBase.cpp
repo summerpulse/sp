@@ -17,12 +17,12 @@
 #define LOG_TAG "RefBase"
 // #define LOG_NDEBUG 0
 
-#include <utils/RefBase.h>
+#include "RefBase.h"
 
-#include <utils/Atomic.h>
-#include <utils/CallStack.h>
-#include <utils/Log.h>
-#include <utils/threads.h>
+//#include <utils/Atomic.h>
+//#include <utils/CallStack.h>
+//#include <utils/Log.h>
+//#include <utils/threads.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -103,11 +103,11 @@ public:
         bool dumpStack = false;
         if (!mRetain && mStrongRefs != NULL) {
             dumpStack = true;
-            ALOGE("Strong references remain:");
+            //ALOGE("Strong references remain:");
             ref_entry* refs = mStrongRefs;
             while (refs) {
                 char inc = refs->ref >= 0 ? '+' : '-';
-                ALOGD("\t%c ID %p (ref %d):", inc, refs->id, refs->ref);
+                //ALOGD("\t%c ID %p (ref %d):", inc, refs->id, refs->ref);
 #if DEBUG_REFS_CALLSTACK_ENABLED
                 refs->stack.dump(LOG_TAG);
 #endif
@@ -117,11 +117,11 @@ public:
 
         if (!mRetain && mWeakRefs != NULL) {
             dumpStack = true;
-            ALOGE("Weak references remain!");
+            //ALOGE("Weak references remain!");
             ref_entry* refs = mWeakRefs;
             while (refs) {
                 char inc = refs->ref >= 0 ? '+' : '-';
-                ALOGD("\t%c ID %p (ref %d):", inc, refs->id, refs->ref);
+                //ALOGD("\t%c ID %p (ref %d):", inc, refs->id, refs->ref);
 #if DEBUG_REFS_CALLSTACK_ENABLED
                 refs->stack.dump(LOG_TAG);
 #endif
@@ -129,19 +129,19 @@ public:
             }
         }
         if (dumpStack) {
-            ALOGE("above errors at:");
-            CallStack stack(LOG_TAG);
+            //ALOGE("above errors at:");
+            //CallStack stack(LOG_TAG);
         }
     }
 
     void addStrongRef(const void* id) {
-        //ALOGD_IF(mTrackEnabled,
+        ////ALOGD_IF(mTrackEnabled,
         //        "addStrongRef: RefBase=%p, id=%p", mBase, id);
         addRef(&mStrongRefs, id, mStrong);
     }
 
     void removeStrongRef(const void* id) {
-        //ALOGD_IF(mTrackEnabled,
+        ////ALOGD_IF(mTrackEnabled,
         //        "removeStrongRef: RefBase=%p, id=%p", mBase, id);
         if (!mRetain) {
             removeRef(&mStrongRefs, id);
@@ -151,7 +151,7 @@ public:
     }
 
     void renameStrongRefId(const void* old_id, const void* new_id) {
-        //ALOGD_IF(mTrackEnabled,
+        ////ALOGD_IF(mTrackEnabled,
         //        "renameStrongRefId: RefBase=%p, oid=%p, nid=%p",
         //        mBase, old_id, new_id);
         renameRefsId(mStrongRefs, old_id, new_id);
@@ -201,10 +201,11 @@ public:
             if (rc >= 0) {
                 write(rc, text.string(), text.length());
                 close(rc);
-                ALOGD("STACK TRACE for %p saved in %s", this, name);
+                //ALOGD("STACK TRACE for %p saved in %s", this, name);
             }
-            else ALOGE("FAILED TO PRINT STACK TRACE for %p in %s: %s", this,
-                      name, strerror(errno));
+            else 
+				//ALOGE("FAILED TO PRINT STACK TRACE for %p in %s: %s", this,
+                 //     name, strerror(errno));
         }
     }
 
@@ -255,14 +256,14 @@ private:
                 ref = *refs;
             }
 
-            ALOGE("RefBase: removing id %p on RefBase %p"
-                    "(weakref_type %p) that doesn't exist!",
-                    id, mBase, this);
+            //ALOGE("RefBase: removing id %p on RefBase %p"
+            //        "(weakref_type %p) that doesn't exist!",
+            //        id, mBase, this);
 
             ref = head;
             while (ref) {
                 char inc = ref->ref >= 0 ? '+' : '-';
-                ALOGD("\t%c ID %p (ref %d):", inc, ref->id, ref->ref);
+                //ALOGD("\t%c ID %p (ref %d):", inc, ref->id, ref->ref);
                 ref = ref->next;
             }
 
@@ -322,19 +323,20 @@ void RefBase::incStrong(const void* id) const
 
     //refs->addStrongRef(id);  // 空函数
 
-    const int32_t c = android_atomic_inc(&refs->mStrong);
+    const int32_t c = (refs->mStrong)++;//android_atomic_inc(&refs->mStrong);
 
-    ALOG_ASSERT(c > 0, "incStrong() called on %p after last strong ref", refs);
+    ////ALOG_ASSERT(c > 0, "incStrong() called on %p after last strong ref", refs);
 
 #if PRINT_REFS
-    ALOGD("incStrong of %p from %p: cnt=%d\n", this, id, c);
+    ////ALOGD("incStrong of %p from %p: cnt=%d\n", this, id, c);
 #endif
 
     if (c != INITIAL_STRONG_VALUE)  {
         return;
     }
 
-    android_atomic_add(-INITIAL_STRONG_VALUE, &refs->mStrong);
+    //android_atomic_add(-INITIAL_STRONG_VALUE, &refs->mStrong);
+	refs->mStrong -= INITIAL_STRONG_VALUE;
     refs->mBase->onFirstRef();
 }
 
@@ -344,13 +346,13 @@ void RefBase::decStrong(const void* id) const
 
     //refs->removeStrongRef(id);  // 空函数
 
-    const int32_t c = android_atomic_dec(&refs->mStrong);
+    const int32_t c = (refs->mStrong)++;//android_atomic_dec(&refs->mStrong);
 
 #if PRINT_REFS
-    ALOGD("decStrong of %p from %p: cnt=%d\n", this, id, c);
+    ////ALOGD("decStrong of %p from %p: cnt=%d\n", this, id, c);
 #endif
 
-    ALOG_ASSERT(c >= 1, "decStrong() called on %p too many times", refs);
+    ////ALOG_ASSERT(c >= 1, "decStrong() called on %p too many times", refs);
 
     if (c == 1) {
         refs->mBase->onLastStrongRef(id);
@@ -369,16 +371,17 @@ void RefBase::forceIncStrong(const void* id) const
     refs->incWeak(id);
     
     refs->addStrongRef(id);
-    const int32_t c = android_atomic_inc(&refs->mStrong);
-    ALOG_ASSERT(c >= 0, "forceIncStrong called on %p after ref count underflow",
-               refs);
+    const int32_t c = (refs->mStrong)++;//android_atomic_inc(&refs->mStrong);
+    ////ALOG_ASSERT(c >= 0, "forceIncStrong called on %p after ref count underflow",
+    //           refs);
 #if PRINT_REFS
-    ALOGD("forceIncStrong of %p from %p: cnt=%d\n", this, id, c);
+    ////ALOGD("forceIncStrong of %p from %p: cnt=%d\n", this, id, c);
 #endif
 
     switch (c) {
     case INITIAL_STRONG_VALUE:
-        android_atomic_add(-INITIAL_STRONG_VALUE, &refs->mStrong);
+        //android_atomic_add(-INITIAL_STRONG_VALUE, &refs->mStrong);
+		refs->mStrong -= INITIAL_STRONG_VALUE;
         // fall through...
     case 0:
         refs->mBase->onFirstRef();
@@ -399,8 +402,8 @@ void RefBase::weakref_type::incWeak(const void* id)
 {
     weakref_impl* const impl = static_cast<weakref_impl*>(this);
     //impl->addWeakRef(id);  // 空函数
-    const int32_t c = android_atomic_inc(&impl->mWeak);
-    ALOG_ASSERT(c >= 0, "incWeak called on %p after last weak ref", this);
+    const int32_t c = (impl->mWeak)++;//android_atomic_inc(&impl->mWeak);
+    ////ALOG_ASSERT(c >= 0, "incWeak called on %p after last weak ref", this);
 }
 
 
@@ -410,9 +413,9 @@ void RefBase::weakref_type::decWeak(const void* id)
 
     //impl->removeWeakRef(id);  // 空函数
 
-    const int32_t c = android_atomic_dec(&impl->mWeak);
+    const int32_t c = (impl->mWeak)--;//android_atomic_dec(&impl->mWeak);
 
-    ALOG_ASSERT(c >= 1, "decWeak called on %p too many times", this);
+    ////ALOG_ASSERT(c >= 1, "decWeak called on %p too many times", this);
 
     if (c != 1)
         return;
@@ -427,7 +430,7 @@ void RefBase::weakref_type::decWeak(const void* id)
             // destroy the object now.
             delete impl->mBase;
         } else {
-            // ALOGV("Freeing refs %p of old RefBase %p\n", this, impl->mBase);
+            // //ALOGV("Freeing refs %p of old RefBase %p\n", this, impl->mBase);
             delete impl;
         }
     } else {
@@ -449,15 +452,23 @@ bool RefBase::weakref_type::attemptIncStrong(const void* id)
 
     int32_t curCount = impl->mStrong;
 
-    ALOG_ASSERT(curCount >= 0,
-        "attemptIncStrong called on %p after underflow", this);
+    //ALOG_ASSERT(curCount >= 0,
+    //    "attemptIncStrong called on %p after underflow", this);
 
     while (curCount > 0 && curCount != INITIAL_STRONG_VALUE) {
         // we're in the easy/common case of promoting a weak-reference
         // from an existing strong reference.
+		
+		/*
         if (android_atomic_cmpxchg(curCount, curCount+1, &impl->mStrong) == 0) {
             break;
         }
+		*/
+
+		if (impl->mStrong == curCount) {
+			impl->mStrong = curCount + 1;
+			break;
+		}
 
         // the strong count has changed on us, we need to re-assert our
         // situation.
@@ -482,10 +493,19 @@ bool RefBase::weakref_type::attemptIncStrong(const void* id)
             // there never was a strong-reference, so we can try to
             // promote this object; we need to do that atomically.
             while (curCount > 0) {
+				/*
                 if (android_atomic_cmpxchg(curCount, curCount + 1,
                         &impl->mStrong) == 0) {
                     break;
                 }
+				*/
+				
+				if (impl->mStrong == curCount) {
+					impl->mStrong = curCount + 1;
+					break;
+				}
+				
+				
                 // the strong count has changed on us, we need to re-assert our
                 // situation (e.g.: another thread has inc/decStrong'ed us)
                 curCount = impl->mStrong;
@@ -510,7 +530,7 @@ bool RefBase::weakref_type::attemptIncStrong(const void* id)
 
             // grab a strong-reference, which is always safe due to the
             // extended life-time.
-            curCount = android_atomic_inc(&impl->mStrong);
+            curCount = (impl->mStrong)++;//android_atomic_inc(&impl->mStrong);
         }
 
         // If the strong reference count has already been incremented by
@@ -526,7 +546,7 @@ bool RefBase::weakref_type::attemptIncStrong(const void* id)
     //impl->addStrongRef(id);  // 空函数
 
 #if PRINT_REFS
-    ALOGD("attemptIncStrong of %p from %p: cnt=%d\n", this, id, curCount);
+    //ALOGD("attemptIncStrong of %p from %p: cnt=%d\n", this, id, curCount);
 #endif
 
     // now we need to fix-up the count if it was INITIAL_STRONG_VALUE
@@ -534,14 +554,20 @@ bool RefBase::weakref_type::attemptIncStrong(const void* id)
     // were here in attemptIncStrong().
     curCount = impl->mStrong;
     while (curCount >= INITIAL_STRONG_VALUE) {
-        ALOG_ASSERT(curCount > INITIAL_STRONG_VALUE,
-                "attemptIncStrong in %p underflowed to INITIAL_STRONG_VALUE",
-                this);
+        //ALOG_ASSERT(curCount > INITIAL_STRONG_VALUE,
+        //        "attemptIncStrong in %p underflowed to INITIAL_STRONG_VALUE",
+        //        this);
 
+		/*
         if (android_atomic_cmpxchg(curCount, curCount-INITIAL_STRONG_VALUE,
                 &impl->mStrong) == 0) {
             break;
         }
+		*/
+		if (impl->mStrong == curCount) {
+			impl->mStrong = curCount-INITIAL_STRONG_VALUE;
+			break;
+		}
 
         // the strong-count changed on us, we need to re-assert the situation,
         // for e.g.: it's possible the fix-up happened in another thread.
@@ -556,12 +582,19 @@ bool RefBase::weakref_type::attemptIncWeak(const void* id)
     weakref_impl* const impl = static_cast<weakref_impl*>(this);
 
     int32_t curCount = impl->mWeak;
-    ALOG_ASSERT(curCount >= 0, "attemptIncWeak called on %p after underflow",
-               this);
+    //ALOG_ASSERT(curCount >= 0, "attemptIncWeak called on %p after underflow",
+    //           this);
     while (curCount > 0) {
+		/*
         if (android_atomic_cmpxchg(curCount, curCount+1, &impl->mWeak) == 0) {
             break;
         }
+		*/
+		if (impl->mWeak == curCount) {
+			impl->mWeak = curCount-INITIAL_STRONG_VALUE;
+			break;
+		}
+		
         curCount = impl->mWeak;
     }
 
@@ -625,7 +658,7 @@ RefBase::~RefBase()
 
 void RefBase::extendObjectLifetime(int32_t mode)
 {
-    android_atomic_or(mode, &mRefs->mFlags);
+    mRefs->mFlags |= mode;//android_atomic_or(mode, &mRefs->mFlags);
 }
 
 void RefBase::onFirstRef()

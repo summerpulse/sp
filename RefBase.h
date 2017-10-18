@@ -17,22 +17,20 @@
 #ifndef ANDROID_REF_BASE_H
 #define ANDROID_REF_BASE_H
 
-#include <cutils/atomic.h>
+//#include <cutils/atomic.h>
 
 #include <stdint.h>
 #include <sys/types.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include <utils/StrongPointer.h>
-#include <utils/TypeHelpers.h>
+#include "StrongPointer.h"
+//#include <utils/TypeHelpers.h>
 
 // ---------------------------------------------------------------------------
 namespace android {
 
-class TextOutput;
-
-TextOutput& printWeakPointer(TextOutput& to, const void* val);
+//TextOutput& printWeakPointer(TextOutput& to, const void* val);
 
 // ---------------------------------------------------------------------------
 
@@ -178,11 +176,17 @@ public:
     inline LightRefBase() : mCount(0) { }
 
     inline void incStrong(__attribute__((unused)) const void* id) const {
-        android_atomic_inc(&mCount);
+        //android_atomic_inc(&mCount);
+		mCount++;
     }
 
     inline void decStrong(__attribute__((unused)) const void* id) const {
+		/*
         if (android_atomic_dec(&mCount) == 1) {
+            delete static_cast<const T*>(this);
+        }
+		*/
+		if ((mCount--) == 1) {
             delete static_cast<const T*>(this);
         }
     }
@@ -300,8 +304,8 @@ private:
     weakref_type*   m_refs;
 };
 
-template <typename T>
-TextOutput& operator<<(TextOutput& to, const wp<T>& val);
+//template <typename T>
+//TextOutput& operator<<(TextOutput& to, const wp<T>& val);
 
 #undef COMPARE_WEAK
 
@@ -464,11 +468,13 @@ void wp<T>::clear()
     }
 }
 
+/*
 template <typename T>
 inline TextOutput& operator<<(TextOutput& to, const wp<T>& val)
 {
-    return printWeakPointer(to, val.unsafe_get());
+    //return printWeakPointer(to, val.unsafe_get());
 }
+*/
 
 // ---------------------------------------------------------------------------
 
